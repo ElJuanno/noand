@@ -3,29 +3,23 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
+// ─── Controladores API que realmente usas ───────────────────────────────
 use App\Http\Controllers\Api\PersonasController;
 use App\Http\Controllers\Api\GrupoController;
-use App\Http\Controllers\Api\EnfermedadController;
-use App\Http\Controllers\Auth\RegisteredUserController;      
-use App\Http\Controllers\Auth\AuthenticatedSessionController; 
+use App\Http\Controllers\Api\AuthController;      // ← Único para login/register
 
+// ─── Endpoints ejemplo (Personas, Grupos) ───────────────────────────────
+Route::get('personas',        [PersonasController::class, 'index']);
+Route::post('personas_create',[PersonasController::class, 'store']);
 
-Route::get('personas', [PersonasController::class, 'index']);
-Route::post('personas_create', [PersonasController::class, 'store']);
-
-Route::get('grupos', [GrupoController::class, 'index']);
-Route::post('grupos_create', [GrupoController::class, 'store']);
-
+Route::get('grupos',          [GrupoController::class, 'index']);
+Route::post('grupos_create',  [GrupoController::class, 'store']);
 
 Route::get('/students', function () {
     return 'students list';
 });
 
-// routes/api.php  (mejor en el grupo API para evitar CSRF)
-Route::post('/register', [RegisteredUserController::class, 'store']);
-Route::post('/login',    [AuthenticatedSessionController::class, 'store']);
-use App\Http\Controllers\Api\AuthController;
-
+// ─── Autenticación (solo estas líneas) ──────────────────────────────────
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login',    [AuthController::class, 'login']);
 
