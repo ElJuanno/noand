@@ -1,20 +1,8 @@
 <?php
 return [
-
-'paths' => ['api/*'],
-
-'allowed_methods' => ['*'],
-
-'allowed_origins' => ['*'],
-
-'allowed_origins_patterns' => [],
-
-'allowed_headers' => ['*'],
-
-'exposed_headers' => [],
-
-'max_age' => 0,
-
-'supports_credentials' => false,
-
+    'paths' => ['api/*', 'sanctum/csrf-cookie'],
+    'allowed_methods' => ['*'],
+    'allowed_origins' => ['*'],             // o pon aquí tu IP si quieres acotar
+    'allowed_headers' => ['*'],
+    'supports_credentials' => false,
 ];
