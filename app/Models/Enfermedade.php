@@ -16,23 +16,18 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Enfermedade extends Model
 {
-    
+    protected $table = 'enfermedades'; // opcional si ya usas nombre pluralizado
+    protected $primaryKey = 'id_enfermedad';
+    public $incrementing = true; // o false si no es autoincremental
+    public $timestamps = false;
+
     protected $perPage = 20;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = ['id_enfermedad', 'descripcion'];
 
-
-    /**
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
-     */
     public function asignaPadecimientos()
     {
         return $this->hasMany(\App\Models\AsignaPadecimiento::class, 'id_enfermedad', 'id_enfermedad');
     }
-    
 }
+
