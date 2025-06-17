@@ -9,9 +9,11 @@
         "php": "^8.2",
         "laravel/framework": "^12.0",
         "laravel/sanctum": "^4.1",
-        "laravel/tinker": "^2.10.1"
+        "laravel/tinker": "^2.10.1",
+        "reliese/laravel": "^1.4"
     },
     "require-dev": {
+        "appzcoder/crud-generator": "^4.0",
         "fakerphp/faker": "^1.23",
         "ibex/crud-generator": "^2.1",
         "kitloong/laravel-migrations-generator": "^7.1",
@@ -71,6 +73,10 @@
             "php-http/discovery": true
         }
     },
+    "files": [
+        "app/Helpers/ImagenRecetaHelper.php"
+    ],
+
     "minimum-stability": "stable",
     "prefer-stable": true
 }

@@ -2,52 +2,27 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 
-/**
- * Class Persona
- *
- * @property $id_persona
- * @property $nombre
- * @property $apellido_p
- * @property $apellido_m
- * @property $sexo
- * @property $curp
- * @property $correo
- * @property $contraseña
- *
- * @property Especialista[] $especialistas
- * @property Usuario[] $usuarios
- * @package App
- * @mixin \Illuminate\Database\Eloquent\Builder
- */
-class Persona extends Model
+class Persona extends Authenticatable
 {
-    
-    protected $perPage = 20;
+    protected $table = 'personas';
+    protected $primaryKey = 'id';
+    public $timestamps = true;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
-    protected $fillable = ['id_persona', 'nombre', 'apellido_p', 'apellido_m', 'sexo', 'curp', 'correo', 'contraseña'];
+    protected $fillable = [
+        'nombre',
+        'apellido_p',
+        'apellido_m',
+        'sexo',
+        'curp',
+        'correo',
+        'contrasena',
+    ];
 
+    protected $hidden = ['contrasena'];
 
-    /**
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
-     */
-    public function especialistas()
-    {
-        return $this->hasMany(\App\Models\Especialista::class, 'id_persona', 'id_persona');
-    }
-    
-    /**
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
-     */
-    public function usuarios()
-    {
-        return $this->hasMany(\App\Models\Usuario::class, 'id_persona', 'id_persona');
-    }
-    
+    public function getAuthPassword() { return $this->contrasena; }
+    public function getAuthIdentifierName() { return 'id'; }
+
 }

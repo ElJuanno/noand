@@ -4,36 +4,22 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-/**
- * Class Periodo
- *
- * @property $id_periodo
- * @property $fecha_i
- * @property $fecha_f
- *
- * @property ReportesNutricionale[] $reportesNutricionales
- * @package App
- * @mixin \Illuminate\Database\Eloquent\Builder
- */
 class Periodo extends Model
 {
-    
-    protected $perPage = 20;
+    protected $table = 'periodos';
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
-    protected $fillable = ['id_periodo', 'fecha_i', 'fecha_f'];
+    protected $fillable = [
+        'fecha_i',
+        'fecha_f',
+    ];
 
+    public function seguimientos()
+    {
+        return $this->hasMany(Seguimiento::class, 'id_periodo');
+    }
 
-    /**
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
-     */
     public function reportesNutricionales()
     {
-        return $this->hasMany(\App\Models\ReportesNutricionale::class, 'id_periodo', 'id_periodo');
+        return $this->hasMany(ReporteNutricional::class, 'id_periodo');
     }
-    
 }

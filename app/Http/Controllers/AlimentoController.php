@@ -2,83 +2,106 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Controller;
+
 use App\Models\Alimento;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use App\Http\Requests\AlimentoRequest;
-use Illuminate\Support\Facades\Redirect;
-use Illuminate\View\View;
 
 class AlimentoController extends Controller
 {
     /**
      * Display a listing of the resource.
+     *
+     * @return \Illuminate\View\View
      */
-    public function index(Request $request): View
+    public function index()
     {
-        $alimentos = Alimento::paginate();
-
-        return view('alimento.index', compact('alimentos'))
-            ->with('i', ($request->input('page', 1) - 1) * $alimentos->perPage());
+        $alimentos = \App\Models\Alimento::all(); // o paginate() si prefieres paginación
+        return view('alimentos.alimento.index', compact('alimentos'));
     }
 
     /**
      * Show the form for creating a new resource.
+     *
+     * @return \Illuminate\View\View
      */
-    public function create(): View
+    public function create()
     {
-        $alimento = new Alimento();
-
-        return view('alimento.create', compact('alimento'));
+        return view('alimentos.alimento.create');
     }
 
     /**
      * Store a newly created resource in storage.
+     *
+     * @param \Illuminate\Http\Request $request
+     *
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector
      */
-    public function store(AlimentoRequest $request): RedirectResponse
+    public function store(Request $request)
     {
-        Alimento::create($request->validated());
 
-        return Redirect::route('alimentos.index')
-            ->with('success', 'Alimento created successfully.');
+        $requestData = $request->all();
+
+        Alimento::create($requestData);
+
+        return redirect('alimento')->with('flash_message', 'Alimento added!');
     }
 
     /**
      * Display the specified resource.
+     *
+     * @param int $id
+     *
+     * @return \Illuminate\View\View
      */
-    public function show($id): View
+    public function show($id)
     {
-        $alimento = Alimento::find($id);
-
-        return view('alimento.show', compact('alimento'));
+        $alimento = Alimento::findOrFail($id);
+        return view('alimentos.alimento.show', compact('alimento'));
     }
-
     /**
      * Show the form for editing the specified resource.
+     *
+     * @param int $id
+     *
+     * @return \Illuminate\View\View
      */
-    public function edit($id): View
+    public function edit($id)
     {
-        $alimento = Alimento::find($id);
-
-        return view('alimento.edit', compact('alimento'));
+        $alimento = Alimento::findOrFail($id);
+        return view('alimentos.alimento.edit', compact('alimento'));
     }
 
     /**
      * Update the specified resource in storage.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @param int $id
+     *
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector
      */
-    public function update(AlimentoRequest $request, Alimento $alimento): RedirectResponse
+    public function update(Request $request, $id)
     {
-        $alimento->update($request->validated());
 
-        return Redirect::route('alimentos.index')
-            ->with('success', 'Alimento updated successfully');
+        $requestData = $request->all();
+
+        $alimento = Alimento::findOrFail($id);
+        $alimento->update($requestData);
+
+        return redirect('alimento')->with('flash_message', 'Alimento updated!');
     }
 
-    public function destroy($id): RedirectResponse
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param int $id
+     *
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector
+     */
+    public function destroy($id)
     {
-        Alimento::find($id)->delete();
+        Alimento::destroy($id);
 
-        return Redirect::route('alimentos.index')
-            ->with('success', 'Alimento deleted successfully');
+        return redirect('alimento')->with('flash_message', 'Alimento deleted!');
     }
 }

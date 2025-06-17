@@ -2,83 +2,33 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Persona;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use App\Http\Requests\PersonaRequest;
-use Illuminate\Support\Facades\Redirect;
-use Illuminate\View\View;
+use App\Models\Persona;
+use Illuminate\Support\Facades\Hash;
 
 class PersonaController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index(Request $request): View
+    public function store(Request $request)
     {
-        $personas = Persona::paginate();
+        $request->validate([
+            'nombre' => 'required|string|max:255',
+            'apellido_p' => 'required|string|max:255',
+            'apellido_m' => 'required|string|max:255',
+            'sexo' => 'required|in:H,M',
+            'correo' => 'required|email|unique:personas,correo',
+            'contrasena' => 'required|string|min:6|confirmed',
+        ]);
 
-        return view('persona.index', compact('personas'))
-            ->with('i', ($request->input('page', 1) - 1) * $personas->perPage());
-    }
+        $persona = Persona::create([
+            'nombre' => $request->nombre,
+            'apellido_p' => $request->apellido_p,
+            'apellido_m' => $request->apellido_m,
+            'sexo' => $request->sexo,
+            'curp' => $request->curp,
+            'correo' => $request->correo,
+            'contrasena' => Hash::make($request->contrasena),
+        ]);
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create(): View
-    {
-        $persona = new Persona();
-
-        return view('persona.create', compact('persona'));
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(PersonaRequest $request): RedirectResponse
-    {
-        Persona::create($request->validated());
-
-        return Redirect::route('personas.index')
-            ->with('success', 'Persona created successfully.');
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show($id): View
-    {
-        $persona = Persona::find($id);
-
-        return view('persona.show', compact('persona'));
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit($id): View
-    {
-        $persona = Persona::find($id);
-
-        return view('persona.edit', compact('persona'));
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(PersonaRequest $request, Persona $persona): RedirectResponse
-    {
-        $persona->update($request->validated());
-
-        return Redirect::route('personas.index')
-            ->with('success', 'Persona updated successfully');
-    }
-
-    public function destroy($id): RedirectResponse
-    {
-        Persona::find($id)->delete();
-
-        return Redirect::route('personas.index')
-            ->with('success', 'Persona deleted successfully');
+        return redirect()->route('login')->with('success', 'Usuario registrado correctamente. Ahora puedes iniciar sesión.');
     }
 }

@@ -3,82 +3,69 @@
 namespace App\Http\Controllers;
 
 use App\Models\AsignaComida;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use App\Http\Requests\AsignaComidaRequest;
-use Illuminate\Support\Facades\Redirect;
-use Illuminate\View\View;
 
 class AsignaComidaController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index(Request $request): View
+    public function index(Request $request)
     {
-        $asignaComidas = AsignaComida::paginate();
+        $keyword = $request->get('search');
+        $perPage = 25;
 
-        return view('asigna-comida.index', compact('asignaComidas'))
-            ->with('i', ($request->input('page', 1) - 1) * $asignaComidas->perPage());
+        $asignacomida = !empty($keyword)
+            ? AsignaComida::where('id_dieta', 'LIKE', "%$keyword%")
+                ->orWhere('id_comida', 'LIKE', "%$keyword%")
+                ->latest()->paginate($perPage)
+            : AsignaComida::latest()->paginate($perPage);
+
+        return view('asigna_comidas.asigna-comida.index', compact('asignacomida'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create(): View
+    public function create()
     {
-        $asignaComida = new AsignaComida();
-
-        return view('asigna-comida.create', compact('asignaComida'));
+        return view('asigna_comidas.asigna-comida.create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(AsignaComidaRequest $request): RedirectResponse
+    public function store(Request $request)
     {
-        AsignaComida::create($request->validated());
+        $validated = $request->validate([
+            'id_dieta' => 'required|integer|exists:dietas,id',
+            'id_comida' => 'required|integer|exists:comidas,id',
+        ]);
 
-        return Redirect::route('asigna-comidas.index')
-            ->with('success', 'AsignaComida created successfully.');
+        AsignaComida::create($validated);
+
+        return redirect()->route('asigna-comida.index')->with('flash_message', 'Asignación creada correctamente.');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show($id): View
+    public function show($id)
     {
-        $asignaComida = AsignaComida::find($id);
-
-        return view('asigna-comida.show', compact('asignaComida'));
+        $asignacomida = AsignaComida::findOrFail($id);
+        return view('asigna_comidas.asigna-comida.show', compact('asignacomida'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit($id): View
+    public function edit($id)
     {
-        $asignaComida = AsignaComida::find($id);
-
-        return view('asigna-comida.edit', compact('asignaComida'));
+        $asignacomida = AsignaComida::findOrFail($id);
+        return view('asigna_comidas.asigna-comida.edit', compact('asignacomida'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(AsignaComidaRequest $request, AsignaComida $asignaComida): RedirectResponse
+    public function update(Request $request, $id)
     {
-        $asignaComida->update($request->validated());
+        $validated = $request->validate([
+            'id_dieta' => 'required|integer|exists:dietas,id',
+            'id_comida' => 'required|integer|exists:comidas,id',
+        ]);
 
-        return Redirect::route('asigna-comidas.index')
-            ->with('success', 'AsignaComida updated successfully');
+        $asignacomida = AsignaComida::findOrFail($id);
+        $asignacomida->update($validated);
+
+        return redirect()->route('asigna-comida.index')->with('flash_message', 'Asignación actualizada.');
     }
 
-    public function destroy($id): RedirectResponse
+    public function destroy($id)
     {
-        AsignaComida::find($id)->delete();
-
-        return Redirect::route('asigna-comidas.index')
-            ->with('success', 'AsignaComida deleted successfully');
+        AsignaComida::destroy($id);
+        return redirect()->route('asigna-comida.index')->with('flash_message', 'Asignación eliminada.');
     }
 }

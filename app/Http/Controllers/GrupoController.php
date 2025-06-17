@@ -3,82 +3,65 @@
 namespace App\Http\Controllers;
 
 use App\Models\Grupo;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use App\Http\Requests\GrupoRequest;
-use Illuminate\Support\Facades\Redirect;
-use Illuminate\View\View;
 
 class GrupoController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index(Request $request): View
+    public function index(Request $request)
     {
-        $grupos = Grupo::paginate();
+        $keyword = $request->get('search');
+        $perPage = 25;
 
-        return view('grupo.index', compact('grupos'))
-            ->with('i', ($request->input('page', 1) - 1) * $grupos->perPage());
+        $grupos = !empty($keyword)
+            ? Grupo::where('descripcion', 'LIKE', "%$keyword%")->latest()->paginate($perPage)
+            : Grupo::latest()->paginate($perPage);
+
+        return view('grupos.grupo.index', compact('grupos'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create(): View
+    public function create()
     {
-        $grupo = new Grupo();
-
-        return view('grupo.create', compact('grupo'));
+        return view('grupos.grupo.create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(GrupoRequest $request): RedirectResponse
+    public function store(Request $request)
     {
-        Grupo::create($request->validated());
+        $validated = $request->validate([
+            'descripcion' => 'required|string|max:255',
+        ]);
 
-        return Redirect::route('grupos.index')
-            ->with('success', 'Grupo created successfully.');
+        Grupo::create($validated);
+
+        return redirect()->route('grupo.index')->with('flash_message', 'Grupo registrado correctamente.');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show($id): View
+    public function show($id)
     {
-        $grupo = Grupo::find($id);
-
-        return view('grupo.show', compact('grupo'));
+        $grupo = Grupo::findOrFail($id);
+        return view('grupos.grupo.show', compact('grupo'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit($id): View
+    public function edit($id)
     {
-        $grupo = Grupo::find($id);
-
-        return view('grupo.edit', compact('grupo'));
+        $grupo = Grupo::findOrFail($id);
+        return view('grupos.grupo.edit', compact('grupo'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(GrupoRequest $request, Grupo $grupo): RedirectResponse
+    public function update(Request $request, $id)
     {
-        $grupo->update($request->validated());
+        $validated = $request->validate([
+            'descripcion' => 'required|string|max:255',
+        ]);
 
-        return Redirect::route('grupos.index')
-            ->with('success', 'Grupo updated successfully');
+        $grupo = Grupo::findOrFail($id);
+        $grupo->update($validated);
+
+        return redirect()->route('grupo.index')->with('flash_message', 'Grupo actualizado correctamente.');
     }
 
-    public function destroy($id): RedirectResponse
+    public function destroy($id)
     {
-        Grupo::find($id)->delete();
-
-        return Redirect::route('grupos.index')
-            ->with('success', 'Grupo deleted successfully');
+        Grupo::destroy($id);
+        return redirect()->route('grupo.index')->with('flash_message', 'Grupo eliminado.');
     }
 }

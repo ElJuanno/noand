@@ -3,82 +3,82 @@
 namespace App\Http\Controllers;
 
 use App\Models\Especialista;
-use Illuminate\Http\RedirectResponse;
+use App\Models\Persona;
+use App\Models\Especialidad;
+use App\Models\Institucion;
 use Illuminate\Http\Request;
-use App\Http\Requests\EspecialistaRequest;
-use Illuminate\Support\Facades\Redirect;
-use Illuminate\View\View;
 
 class EspecialistaController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index(Request $request): View
+    public function index(Request $request)
     {
-        $especialistas = Especialista::paginate();
+        $keyword = $request->get('search');
+        $perPage = 25;
 
-        return view('especialista.index', compact('especialistas'))
-            ->with('i', ($request->input('page', 1) - 1) * $especialistas->perPage());
+        $especialistas = !empty($keyword)
+            ? Especialista::where('matricula', 'LIKE', "%$keyword%")->latest()->paginate($perPage)
+            : Especialista::latest()->paginate($perPage);
+
+        return view('especialistas.especialista.index', compact('especialistas'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create(): View
+    public function create()
     {
-        $especialista = new Especialista();
+        $personas = Persona::all();
+        $especialidades = Especialidad::all();
+        $instituciones = Institucion::all();
 
-        return view('especialista.create', compact('especialista'));
+        return view('especialistas.especialista.create', compact('personas', 'especialidades', 'instituciones'));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(EspecialistaRequest $request): RedirectResponse
+    public function store(Request $request)
     {
-        Especialista::create($request->validated());
+        $validated = $request->validate([
+            'id_persona' => 'required|integer|exists:personas,id',
+            'matricula' => 'nullable|string|max:255',
+            'id_especialidad' => 'nullable|integer|exists:especialidads,id',
+            'id_institucion' => 'nullable|integer|exists:institucions,id',
+        ]);
 
-        return Redirect::route('especialistas.index')
-            ->with('success', 'Especialista created successfully.');
+        Especialista::create($validated);
+
+        return redirect()->route('especialista.index')->with('flash_message', 'Especialista registrado correctamente.');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show($id): View
+    public function show($id)
     {
-        $especialista = Especialista::find($id);
-
-        return view('especialista.show', compact('especialista'));
+        $especialista = Especialista::findOrFail($id);
+        return view('especialistas.especialista.show', compact('especialista'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit($id): View
+    public function edit($id)
     {
-        $especialista = Especialista::find($id);
+        $especialista = Especialista::findOrFail($id);
+        $personas = Persona::all();
+        $especialidades = Especialidad::all();
+        $instituciones = Institucion::all();
 
-        return view('especialista.edit', compact('especialista'));
+        return view('especialistas.especialista.edit', compact('especialista', 'personas', 'especialidades', 'instituciones'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(EspecialistaRequest $request, Especialista $especialista): RedirectResponse
+    public function update(Request $request, $id)
     {
-        $especialista->update($request->validated());
+        $validated = $request->validate([
+            'id_persona' => 'required|integer|exists:personas,id',
+            'matricula' => 'nullable|string|max:255',
+            'id_especialidad' => 'nullable|integer|exists:especialidads,id',
+            'id_institucion' => 'nullable|integer|exists:institucions,id',
+        ]);
 
-        return Redirect::route('especialistas.index')
-            ->with('success', 'Especialista updated successfully');
+        $especialista = Especialista::findOrFail($id);
+        $especialista->update($validated);
+
+        return redirect()->route('especialista.index')->with('flash_message', 'Especialista actualizado correctamente.');
     }
 
-    public function destroy($id): RedirectResponse
+    public function destroy($id)
     {
-        Especialista::find($id)->delete();
-
-        return Redirect::route('especialistas.index')
-            ->with('success', 'Especialista deleted successfully');
+        Especialista::destroy($id);
+        return redirect()->route('especialista.index')->with('flash_message', 'Especialista eliminado.');
     }
 }

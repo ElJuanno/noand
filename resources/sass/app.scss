@@ -6,3 +6,10 @@
 
 // Bootstrap
 @import 'bootstrap/scss/bootstrap';
+// Tus colores personalizados (opcional)
+$primary: #388E3C;
+$body-bg: #E8F5E9;
+$font-family-base: 'Segoe UI', sans-serif;
+
+// Importar Bootstrap
+@import "~bootstrap/scss/bootstrap";

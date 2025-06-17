@@ -4,35 +4,16 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-/**
- * Class Grupo
- *
- * @property $id_grupo
- * @property $descripcion
- *
- * @property AsignaGrupo[] $asignaGrupos
- * @package App
- * @mixin \Illuminate\Database\Eloquent\Builder
- */
 class Grupo extends Model
 {
-    
-    protected $perPage = 20;
+    protected $table = 'grupos';
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
-    protected $fillable = ['id_grupo', 'descripcion'];
+    protected $fillable = [
+        'descripcion',
+    ];
 
-
-    /**
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
-     */
-    public function asignaGrupos()
+    public function asignaciones()
     {
-        return $this->hasMany(\App\Models\AsignaGrupo::class, 'id_grupo', 'id_grupo');
+        return $this->hasMany(AsignaGrupo::class, 'id_grupo');
     }
-    
 }

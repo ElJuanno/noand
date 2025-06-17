@@ -4,44 +4,28 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-/**
- * Class Dieta
- *
- * @property $id_dieta
- * @property $id_usuario
- *
- * @property AsignaComida[] $asignaComidas
- * @property ReportesNutricionale[] $reportesNutricionales
- * @package App
- * @mixin \Illuminate\Database\Eloquent\Builder
- */
 class Dieta extends Model
 {
-    
-    protected $perPage = 20;
-
     /**
-     * The attributes that are mass assignable.
+     * The database table used by the model.
      *
-     * @var array<int, string>
+     * @var string
      */
-    protected $fillable = ['id_dieta', 'id_usuario'];
-
+    protected $table = 'dietas';
 
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
-     */
-    public function asignaComidas()
-    {
-        return $this->hasMany(\App\Models\AsignaComida::class, 'id_dieta', 'id_dieta');
-    }
-    
+    * The database primary key value.
+    *
+    * @var string
+    */
+    protected $primaryKey = 'id';
+
     /**
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     * Attributes that should be mass-assignable.
+     *
+     * @var array
      */
-    public function reportesNutricionales()
-    {
-        return $this->hasMany(\App\Models\ReportesNutricionale::class, 'id_dieta', 'id_dieta');
-    }
-    
+    protected $fillable = ['id_usuario'];
+
+
 }

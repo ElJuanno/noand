@@ -1,84 +1,112 @@
 <?php
-
 namespace App\Http\Controllers;
 
-use App\Models\Comida;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use App\Http\Requests\ComidaRequest;
-use Illuminate\Support\Facades\Redirect;
-use Illuminate\View\View;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class ComidaController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index(Request $request): View
+    // Mostrar resumen diario de comidas seguidas por el usuario
+    public function create()
     {
-        $comidas = Comida::paginate();
+        $personaId = Auth::id();
+        $hoy = now()->toDateString();
+        $semanaPasada = now()->subDays(6)->toDateString();
 
-        return view('comida.index', compact('comidas'))
-            ->with('i', ($request->input('page', 1) - 1) * $comidas->perPage());
+        // Resumen diario
+        $resumenDiario = DB::table('seguimientos')
+            ->join('comidas', 'seguimientos.id_comida', '=', 'comidas.id')
+            ->select('comidas.nombre as comida', DB::raw('SUM(comidas.calorias) as calorias'), DB::raw('SUM(comidas.azucar) as azucar'), DB::raw('SUM(comidas.carbohidratos) as carbohidratos'))
+            ->where('seguimientos.id_persona', $personaId)
+            ->whereDate('seguimientos.fecha', $hoy)
+            ->groupBy('comidas.nombre')
+            ->get();
+
+        // Gráfica semanal (por fecha)
+        $datosSemana = DB::table('seguimientos')
+            ->join('comidas', 'seguimientos.id_comida', '=', 'comidas.id')
+            ->select(
+                DB::raw('DATE(seguimientos.fecha) as fecha'),
+                DB::raw('SUM(comidas.calorias) as calorias'),
+                DB::raw('SUM(comidas.azucar) as azucar'),
+                DB::raw('SUM(comidas.carbohidratos) as carbohidratos')
+            )
+            ->where('seguimientos.id_persona', $personaId)
+            ->whereBetween('seguimientos.fecha', [$semanaPasada, $hoy])
+            ->groupBy('fecha')
+            ->orderBy('fecha')
+            ->get();
+
+        // Gráfica por hora
+        $porHora = DB::table('seguimientos')
+            ->join('comidas', 'seguimientos.id_comida', '=', 'comidas.id')
+            ->select(
+                DB::raw('HOUR(seguimientos.created_at) as hora'),
+                DB::raw('SUM(comidas.calorias) as calorias'),
+                DB::raw('SUM(comidas.azucar) as azucar'),
+                DB::raw('SUM(comidas.carbohidratos) as carbohidratos')
+            )
+            ->where('seguimientos.id_persona', $personaId)
+            ->whereDate('seguimientos.fecha', $hoy)
+            ->groupBy('hora')
+            ->orderBy('hora')
+            ->get();
+
+        return view('pages.comida.create', compact('resumenDiario', 'datosSemana', 'porHora'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create(): View
+
+
+
+    // Guardar la comida que se sigue (desde el plan alimenticio)
+    public function store(Request $request)
     {
-        $comida = new Comida();
+        $request->validate([
+            'nombre' => 'required|string',
+            'hora' => 'required|string',
+            'calorias' => 'required|numeric',
+            'azucar' => 'required|numeric',
+            'carbohidratos' => 'required|numeric',
+        ]);
 
-        return view('comida.create', compact('comida'));
-    }
+        $nombre = $request->input('nombre');
+        $hora = $request->input('hora');
+        $calorias = $request->input('calorias');
+        $azucar = $request->input('azucar');
+        $carbohidratos = $request->input('carbohidratos');
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(ComidaRequest $request): RedirectResponse
-    {
-        Comida::create($request->validated());
+        $personaId = Auth::id();
+        $fechaHoy = now()->toDateString();
 
-        return Redirect::route('comidas.index')
-            ->with('success', 'Comida created successfully.');
-    }
+        // Buscar si ya existe la comida
+        $comida = DB::table('comidas')->where('nombre', $nombre)->first();
 
-    /**
-     * Display the specified resource.
-     */
-    public function show($id): View
-    {
-        $comida = Comida::find($id);
+        if (!$comida) {
+            $comidaId = DB::table('comidas')->insertGetId([
+                'nombre' => $nombre,
+                'horario' => $hora,
+                'calorias' => $calorias,
+                'azucar' => $azucar,
+                'carbohidratos' => $carbohidratos,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } else {
+            $comidaId = $comida->id;
+        }
 
-        return view('comida.show', compact('comida'));
-    }
+        // Registrar el seguimiento
+        DB::table('seguimientos')->insert([
+            'id_persona' => $personaId,
+            'id_comida'  => $comidaId,
+            'fecha'      => $fechaHoy,
+            'notas'      => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit($id): View
-    {
-        $comida = Comida::find($id);
-
-        return view('comida.edit', compact('comida'));
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(ComidaRequest $request, Comida $comida): RedirectResponse
-    {
-        $comida->update($request->validated());
-
-        return Redirect::route('comidas.index')
-            ->with('success', 'Comida updated successfully');
-    }
-
-    public function destroy($id): RedirectResponse
-    {
-        Comida::find($id)->delete();
-
-        return Redirect::route('comidas.index')
-            ->with('success', 'Comida deleted successfully');
+        return redirect()->back()->with('success', 'Comida registrada correctamente.');
     }
 }

@@ -3,82 +3,109 @@
 namespace App\Http\Controllers;
 
 use App\Models\Alergia;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use App\Http\Requests\AlergiaRequest;
-use Illuminate\Support\Facades\Redirect;
-use Illuminate\View\View;
+use App\Http\Controllers\Controller;
 
 class AlergiaController extends Controller
 {
     /**
      * Display a listing of the resource.
+     *
+     * @return \Illuminate\View\View
      */
-    public function index(Request $request): View
+    public function index(Request $request)
     {
-        $alergias = Alergia::paginate();
+        $keyword = $request->get('search');
+        $perPage = 25;
 
-        return view('alergia.index', compact('alergias'))
-            ->with('i', ($request->input('page', 1) - 1) * $alergias->perPage());
+        if (!empty($keyword)) {
+            $alergia = Alergia::where('descripcion', 'LIKE', "%$keyword%")
+                ->latest()->paginate($perPage);
+        } else {
+            $alergia = Alergia::latest()->paginate($perPage);
+        }
+
+        return view('alergias.alergia.index', compact('alergia'));
     }
 
     /**
      * Show the form for creating a new resource.
+     *
+     * @return \Illuminate\View\View
      */
-    public function create(): View
+    public function create()
     {
-        $alergia = new Alergia();
-
-        return view('alergia.create', compact('alergia'));
+        return view('alergias.alergia.create');
     }
 
     /**
      * Store a newly created resource in storage.
+     *
+     * @param \Illuminate\Http\Request $request
+     *
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector
      */
-    public function store(AlergiaRequest $request): RedirectResponse
+    public function store(Request $request)
     {
-        Alergia::create($request->validated());
 
-        return Redirect::route('alergias.index')
-            ->with('success', 'Alergia created successfully.');
+        $requestData = $request->all();
+
+        Alergia::create($requestData);
+
+        return redirect('alergia')->with('flash_message', 'Alergia added!');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show($id): View
+    public function show($id)
     {
-        $alergia = Alergia::find($id);
-
-        return view('alergia.show', compact('alergia'));
+        $alergia = \App\Models\Alergia::findOrFail($id);
+        return view('alergias.alergia.show', compact('alergia'));
     }
+
 
     /**
      * Show the form for editing the specified resource.
+     *
+     * @param int $id
+     *
+     * @return \Illuminate\View\View
      */
-    public function edit($id): View
+    public function edit($id)
     {
-        $alergia = Alergia::find($id);
-
-        return view('alergia.edit', compact('alergia'));
+        $alergia = \App\Models\Alergia::findOrFail($id);
+        return view('alergias.alergia.edit', compact('alergia'));
     }
+
 
     /**
      * Update the specified resource in storage.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @param int $id
+     *
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector
      */
-    public function update(AlergiaRequest $request, Alergia $alergia): RedirectResponse
+    public function update(Request $request, $id)
     {
-        $alergia->update($request->validated());
 
-        return Redirect::route('alergias.index')
-            ->with('success', 'Alergia updated successfully');
+        $requestData = $request->all();
+
+        $Alergia = Alergia::findOrFail($id);
+        $Alergia->update($requestData);
+
+        return redirect('alergia')->with('flash_message', 'Alergia updated!');
     }
 
-    public function destroy($id): RedirectResponse
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param int $id
+     *
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector
+     */
+    public function destroy($id)
     {
-        Alergia::find($id)->delete();
+        Alergia::destroy($id);
 
-        return Redirect::route('alergias.index')
-            ->with('success', 'Alergia deleted successfully');
+        return redirect('alergia')->with('flash_message', 'Alergia deleted!');
     }
 }

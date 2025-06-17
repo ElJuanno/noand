@@ -2,83 +2,63 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Periodo;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use App\Http\Requests\PeriodoRequest;
-use Illuminate\Support\Facades\Redirect;
-use Illuminate\View\View;
+use App\Models\Persona;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 
-class PeriodoController extends Controller
+class PerfilController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index(Request $request): View
+    public function edit()
     {
-        $periodos = Periodo::paginate();
+        $persona = session('persona');
 
-        return view('periodo.index', compact('periodos'))
-            ->with('i', ($request->input('page', 1) - 1) * $periodos->perPage());
+        if (!$persona) {
+            return redirect()->route('login')->with('error', 'Debes iniciar sesión');
+        }
+
+        return view('perfil', ['persona' => $persona]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create(): View
+    public function update(Request $request)
     {
-        $periodo = new Periodo();
+        $persona = Persona::find(session('persona')->id);
 
-        return view('periodo.create', compact('periodo'));
-    }
+        if (!$persona) {
+            return redirect()->route('login');
+        }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(PeriodoRequest $request): RedirectResponse
-    {
-        Periodo::create($request->validated());
+        $request->validate([
+            'nombre' => 'required|string|max:255',
+            'apellido_p' => 'required|string|max:255',
+            'apellido_m' => 'required|string|max:255',
+            'sexo' => 'required|in:H,M',
+            'curp' => 'nullable|string|max:18|unique:personas,curp,' . $persona->id,
+            'correo' => 'required|email|unique:personas,correo,' . $persona->id,
+            'foto' => 'nullable|image|max:2048',
+        ]);
 
-        return Redirect::route('periodos.index')
-            ->with('success', 'Periodo created successfully.');
-    }
+        // Manejo de imagen
+        if ($request->hasFile('foto')) {
+            if ($persona->foto) {
+                Storage::disk('public')->delete($persona->foto); // Borra la anterior
+            }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show($id): View
-    {
-        $periodo = Periodo::find($id);
+            $path = $request->file('foto')->store('perfiles', 'public');
+            $persona->foto = $path;
+        }
 
-        return view('periodo.show', compact('periodo'));
-    }
+        $persona->update([
+            'nombre' => $request->nombre,
+            'apellido_p' => $request->apellido_p,
+            'apellido_m' => $request->apellido_m,
+            'sexo' => $request->sexo,
+            'curp' => $request->curp,
+            'correo' => $request->correo,
+        ]);
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit($id): View
-    {
-        $periodo = Periodo::find($id);
+        session(['persona' => $persona]);
 
-        return view('periodo.edit', compact('periodo'));
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(PeriodoRequest $request, Periodo $periodo): RedirectResponse
-    {
-        $periodo->update($request->validated());
-
-        return Redirect::route('periodos.index')
-            ->with('success', 'Periodo updated successfully');
-    }
-
-    public function destroy($id): RedirectResponse
-    {
-        Periodo::find($id)->delete();
-
-        return Redirect::route('periodos.index')
-            ->with('success', 'Periodo deleted successfully');
+        return redirect()->route('perfil')->with('success', 'Perfil actualizado correctamente.');
     }
 }

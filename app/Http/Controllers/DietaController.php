@@ -3,82 +3,68 @@
 namespace App\Http\Controllers;
 
 use App\Models\Dieta;
-use Illuminate\Http\RedirectResponse;
+use App\Models\Usuario;
 use Illuminate\Http\Request;
-use App\Http\Requests\DietaRequest;
-use Illuminate\Support\Facades\Redirect;
-use Illuminate\View\View;
 
 class DietaController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index(Request $request): View
+    public function index(Request $request)
     {
-        $dietas = Dieta::paginate();
+        $keyword = $request->get('search');
+        $perPage = 25;
 
-        return view('dieta.index', compact('dietas'))
-            ->with('i', ($request->input('page', 1) - 1) * $dietas->perPage());
+        $dietas = !empty($keyword)
+            ? Dieta::where('id_usuario', 'LIKE', "%$keyword%")->latest()->paginate($perPage)
+            : Dieta::latest()->paginate($perPage);
+
+        return view('dietas.dieta.index', compact('dietas'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create(): View
+    public function create()
     {
-        $dieta = new Dieta();
-
-        return view('dieta.create', compact('dieta'));
+        $usuarios = \App\Models\Usuario::all();
+        return view('dietas.dieta.create', compact('usuarios'));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(DietaRequest $request): RedirectResponse
+    public function store(Request $request)
     {
-        Dieta::create($request->validated());
+        $validated = $request->validate([
+            'id_usuario' => 'required|integer|exists:usuarios,id',
+        ]);
 
-        return Redirect::route('dietas.index')
-            ->with('success', 'Dieta created successfully.');
+        \App\Models\Dieta::create($validated);
+
+        return redirect()->route('dieta.index')->with('flash_message', 'Dieta creada correctamente.');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show($id): View
+    public function show($id)
     {
-        $dieta = Dieta::find($id);
-
-        return view('dieta.show', compact('dieta'));
+        $dieta = \App\Models\Dieta::findOrFail($id);
+        return view('dietas.dieta.show', compact('dieta'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit($id): View
+    public function edit($id)
     {
-        $dieta = Dieta::find($id);
-
-        return view('dieta.edit', compact('dieta'));
+        $dieta = \App\Models\Dieta::findOrFail($id);
+        $usuarios = \App\Models\Usuario::all();
+        return view('dietas.dieta.edit', compact('dieta', 'usuarios'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(DietaRequest $request, Dieta $dieta): RedirectResponse
+    public function update(Request $request, $id)
     {
-        $dieta->update($request->validated());
+        $validated = $request->validate([
+            'id_usuario' => 'required|integer|exists:usuarios,id',
+        ]);
 
-        return Redirect::route('dietas.index')
-            ->with('success', 'Dieta updated successfully');
+        $dieta = \App\Models\Dieta::findOrFail($id);
+        $dieta->update($validated);
+
+        return redirect()->route('dieta.index')->with('flash_message', 'Dieta actualizada correctamente.');
     }
 
-    public function destroy($id): RedirectResponse
+    public function destroy($id)
     {
-        Dieta::find($id)->delete();
-
-        return Redirect::route('dietas.index')
-            ->with('success', 'Dieta deleted successfully');
+        \App\Models\Dieta::destroy($id);
+        return redirect()->route('dieta.index')->with('flash_message', 'Dieta eliminada.');
     }
 }
