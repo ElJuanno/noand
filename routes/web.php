@@ -82,7 +82,6 @@ Route::post('/registro-salud', [SaludController::class, 'store'])->middleware('a
 
 // ==================== RECURSOS CRUD PRINCIPALES ====================
 Route::resources([
-    'alergias' => AlergiaController::class,
     'alimentos' => AlimentoController::class,
     'asigna-alimentos' => AsignaAlimentoController::class,
     'asigna-comidas' => AsignaComidaController::class,
@@ -114,6 +113,15 @@ use App\Http\Controllers\PlanAlimenticioController;
 Route::get('/plan-alimenticio', [PlanAlimenticioController::class, 'show'])
     ->middleware('auth')->name('plan.alimenticio');
 
+use App\Http\Controllers\PlanesAlimenticioController;
+// Página NUEVA: plan semanal (3 o 4 tiempos) — ruta principal
+Route::get('/planesalimenticio/{id?}', [PlanesAlimenticioController::class, 'show'])
+    ->name('planesalimenticio.show');
+
+// ALIAS opcionales para que no falle si algún Blade viejo quedó con otros nombres
+Route::get('/plan/{id?}', [PlanesAlimenticioController::class, 'show'])->name('plan.show');
+Route::get('/planes/{id?}', [PlanesAlimenticioController::class, 'show'])->name('planes.show');
+Route::get('/planes/alimenticio/{id?}', [PlanesAlimenticioController::class, 'show'])->name('planes.alimenticio');
 Route::post('/comidas/seguir', [ComidaController::class, 'store'])->name('comida.store');
 
 Route::get('/registro-comida', [ComidaController::class, 'create'])
@@ -123,3 +131,11 @@ Route::post('/registro-comida', [ComidaController::class, 'store'])
     ->middleware('auth')->name('comida.store');
 
 Route::post('/seguimientos/registrar', [SeguimientoController::class, 'store'])->middleware('auth')->name('seguimientos.store');
+
+// routes/web.php
+use App\Http\Controllers\AlergiasPersonaController;
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/alergias',  [AlergiasPersonaController::class, 'index'])->name('alergias.index');
+    Route::post('/alergias', [AlergiasPersonaController::class, 'store'])->name('alergias.store');
+});

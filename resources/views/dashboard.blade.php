@@ -44,19 +44,31 @@
 
     <div class="dashboard">
         <br>
-        <h2 class="mb-4 text-center">Bienvenido, {{ Auth::user()->nombre }}</h2>
+        <h2 class="mb-4 text-center">!!Bienvenido, {{ Auth::user()->nombre }}¡¡</h2>
 
 
         <div class="row g-4">
             <!-- Plan Alimenticio -->
-            <div class="col-12 col-md-4">
+            <div class="col-12 col-md-12">
                 <div class="card card-custom h-100 p-2">
                     <div class="card-body d-flex flex-column justify-content-center align-items-center text-center">
                         <i class="fas fa-utensils"></i>
                         <h5 class="card-title mt-2">Plan Alimenticio</h5>
                         <p class="text-muted mb-2">Visualiza y sigue tu plan alimenticio personalizado.</p>
-                        <a href="{{ route('plan.alimenticio') }}" class="btn btn-outline-success" id="btn-cargar-plan">
+                        <a href="{{ route('planes.alimenticio') }}" class="btn btn-outline-success" id="btn-cargar-plan">
                             Ver plan alimenticio
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-4">
+                <div class="card card-custom h-100 p-2">
+                    <div class="card-body d-flex flex-column justify-content-center align-items-center text-center">
+                        <i class="fas fa-utensils"></i>
+                        <h5 class="card-title mt-2">Recetas</h5>
+                        <p class="text-muted mb-2">Visualiza las recetas que puedes seguir y personalizar</p>
+                        <a href="{{ route('plan.alimenticio') }}" class="btn btn-outline-success" id="btn-cargar-plan">
+                            Ver recetas
                         </a>
                     </div>
                 </div>

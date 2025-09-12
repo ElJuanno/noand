@@ -27,5 +27,9 @@ class Alergia extends Model
      */
     protected $fillable = ['descripcion'];
 
+// app/Models/Alergia.php
+public function personas() {
+    return $this->belongsToMany(\App\Models\Persona::class, 'alergia_persona', 'alergia_id', 'persona_id')->withTimestamps();
+}
 
 }
