@@ -1,19 +1,31 @@
 <?php
 
-// database/migrations/2025_09_12_000001_create_alergia_persona_table.php
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
-    public function up(): void {
+return new class extends Migration
+{
+    public function up(): void
+    {
         Schema::create('alergia_persona', function (Blueprint $table) {
+            // ID autoincremental
             $table->id();
-            $table->foreignId('id')->constrained('personas')->cascadeOnDelete();
-            $table->foreignId('alergia_id')->constrained('alergias')->cascadeOnDelete();
+
+            // Foreign Keys
+            $table->unsignedBigInteger('persona_id');
+            $table->unsignedBigInteger('alergia_id');
+
+            // Relaciones
+            $table->foreign('persona_id')->references('id')->on('personas')->onDelete('cascade');
+            $table->foreign('alergia_id')->references('id')->on('alergias')->onDelete('cascade');
+
             $table->timestamps();
-            $table->unique(['id','alergia_id']);
         });
     }
-    public function down(): void { Schema::dropIfExists('alergia_persona'); }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('alergia_persona');
+    }
 };
