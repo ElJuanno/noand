@@ -5,41 +5,41 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\MedidaSalud;
-use Illuminate\Support\Facades\Auth;
 
 class MedidaSaludApiController extends Controller
 {
-    public function show()
+    public function index(Request $r)
     {
-        $medida = MedidaSalud::where('id_persona', Auth::id())->first();
+        $q = MedidaSalud::where('id_persona', $r->user()->id)
+              ->orderByDesc('created_at');
 
-        return response()->json($medida ?? []);
+        return response()->json([
+            'ultima'    => $q->first(),
+            'historial' => $q->take(50)->get(),
+        ]);
     }
 
-    public function store(Request $request)
+    public function store(Request $r)
     {
-        $request->validate([
+        $data = $r->validate([
             'glucosa'    => 'required|numeric|min:40|max:600',
-            'presion'    => 'nullable|string|max:30',
-            'frecuencia' => 'nullable|string|max:30',
+            'presion'    => 'nullable|string|max:30',   // "120/80"
+            'frecuencia' => 'nullable|numeric|min:20|max:250',
             'condicion'  => 'nullable|string|max:255',
             'edad'       => 'required|integer|min:1|max:120',
         ]);
 
-        $medida = MedidaSalud::updateOrCreate(
-            ['id_persona' => Auth::id()],
-            [
-                'glucosa'    => $request->glucosa,
-                'presion'    => $request->presion,
-                'frecuencia' => $request->frecuencia,
-                'condicion'  => $request->condicion,
-                'edad'       => $request->edad,
-            ]
-        );
+        $data['id_persona'] = $r->user()->id;
 
-        return response()->json([
-            'message' => 'Medidas de salud guardadas correctamente.',
-            'data' => $medida
-        ], 200);
+        $row = MedidaSalud::create($data);
+
+        return response()->json($row, 201);
+    }
+
+    public function destroy(Request $r, $id)
+    {
+        $row = MedidaSalud::where('id_persona',$r->user()->id)->findOrFail($id);
+        $row->delete();
+        return response()->json([], 204);
     }
 }

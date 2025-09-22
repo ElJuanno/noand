@@ -4,41 +4,117 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Auth;
 use App\Models\MedidaAntropometrica;
 use App\Models\MedidaSalud;
 
 class PlanAlimenticioApiController extends Controller
 {
-    public function show()
+    /** POST /api/plan/recetas
+     * Body opcional: { "modo":"agrupadas", "seed":123 }
+     * Devuelve lo que diga Flask en clave "agrupadas".
+     */
+    public function recetas(Request $r)
     {
-        $persona = Auth::user();
-        $medidaAntro = MedidaAntropometrica::where('id_persona', $persona->id)->latest()->first();
-        $medidaSalud = MedidaSalud::where('id_persona', $persona->id)->latest()->first();
+        [$imc, $glucosa, $alergiasIds, $seed, $modo] = $this->payloadBase($r, 'agrupadas');
 
-        if (!$medidaAntro || !$medidaSalud) {
-            return response()->json(['error' => 'Datos incompletos'], 400);
-        }
+        $resp = $this->callFlask([
+            'imc'          => $imc,
+            'glucosa'      => $glucosa,
+            'modo'         => $modo,       // "agrupadas"
+            'aleatorio'    => true,
+            'seed'         => $seed,
+            'alergias_ids' => $alergiasIds,
+        ]);
 
-        $peso = $medidaAntro->peso;
-        $altura = $medidaAntro->altura;
-        $imc = $peso / ($altura * $altura);
+        if (!$resp['ok']) return response()->json(['message'=>'No disponible'], 502);
 
-        $data = [
-            'glucosa' => $medidaSalud->glucosa,
-            'imc'     => $imc,
-            'edad'    => $medidaSalud->edad,
+        return response()->json([
+            'imc'       => $imc,
+            'glucosa'   => $glucosa,
+            'agrupadas' => $resp['json']['agrupadas'] ?? [],
+        ]);
+    }
+
+    /** POST /api/plan/semanal
+     * Body opcional: { "comidas_por_dia": 3|4, "calorias_objetivo": 2000, "seed":123 }
+     * Devuelve lo que diga Flask en clave "semanal".
+     */
+    public function semanal(Request $r)
+    {
+        $cpd = (int) $r->input('comidas_por_dia', 4);
+        $modo = $cpd === 3 ? 'semanal3' : 'semanal4';
+
+        [$imc, $glucosa, $alergiasIds, $seed] = $this->payloadBase($r, $modo);
+
+        $payload = [
+            'imc'          => $imc,
+            'glucosa'      => $glucosa,
+            'modo'         => $modo,        // "semanal3" | "semanal4"
+            'aleatorio'    => true,
+            'seed'         => $seed,
+            'alergias_ids' => $alergiasIds,
         ];
 
-        $response = Http::timeout(90)->post('http://127.0.0.1:5000/api/plan', $data);
+        if ($r->filled('calorias_objetivo')) {
+            $payload['calorias_objetivo'] = (int) $r->input('calorias_objetivo');
+        }
 
-        if ($response->successful()) {
-            return response()->json([
-                'agrupadas' => $response->json('agrupadas')
-            ]);
-        } else {
-            return response()->json(['error' => 'No se pudo obtener la recomendaci\u00f3n'], 500);
+        $resp = $this->callFlask($payload);
+        if (!$resp['ok']) return response()->json(['message'=>'No disponible'], 502);
+
+        return response()->json([
+            'imc'      => $imc,
+            'glucosa'  => $glucosa,
+            'semanal'  => $resp['json']['semanal'] ?? [],
+        ]);
+    }
+
+    /* ================= Helpers ================= */
+
+    /** Obtiene IMC, glucosa, alergias y seed por defecto */
+    private function payloadBase(Request $r, string $modoDefault): array
+    {
+        $uid = $r->user()->id;
+
+        // Última antropometría
+        $antro = MedidaAntropometrica::where('id_persona', $uid)->latest()->first();
+        $imc = null;
+        if ($antro && $antro->peso && $antro->altura) {
+            $imc = round($antro->peso / ($antro->altura * $antro->altura), 2);
+        }
+
+        // Última glucosa (si hay en MedidaSalud)
+        $ms = MedidaSalud::where('id_persona', $uid)->whereNotNull('glucosa')->latest()->first();
+        $glu = $ms ? (float) $ms->glucosa : null;
+
+        // Alergias del usuario
+        $alergiasIds = DB::table('alergia_persona')
+            ->where('id_persona', $uid)
+            ->pluck('alergia_id')
+            ->map(fn($v) => (int) $v)
+            ->values()
+            ->all();
+
+        $seed = (int) $r->input('seed', $uid);
+        $modo = (string) $r->input('modo', $modoDefault);
+
+        return [$imc, $glu, $alergiasIds, $seed, $modo];
+    }
+
+    /** Llama al servicio Flask según FLASK_URL en .env */
+    private function callFlask(array $payload): array
+    {
+        $base = rtrim(env('FLASK_URL', ''), '/');
+        if ($base === '') return ['ok' => false];
+
+        try {
+            $resp = Http::timeout(60)->post($base . '/api/plan', $payload);
+            if (!$resp->successful()) return ['ok' => false];
+            return ['ok' => true, 'json' => $resp->json()];
+        } catch (\Throwable $e) {
+            return ['ok' => false];
         }
     }
 }

@@ -4,50 +4,40 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use App\Models\Persona;
+use App\Models\MedidaAntropometrica;
 
 class ProfileController extends Controller
 {
-    // Obtener datos del perfil (usuario autenticado)
-    public function show(Request $request)
+    public function update(Request $r)
     {
-        return response()->json($request->user());
-    }
+        $u = $r->user();
 
-    // Actualizar datos del perfil
-    public function update(Request $request)
-    {
-        $user = $request->user();
-
-        $validated = $request->validate([
-            'nombre'      => 'sometimes|required|string|max:255',
-            'apellido_p'  => 'sometimes|required|string|max:255',
-            'apellido_m'  => 'sometimes|nullable|string|max:255',
-            'sexo'        => 'sometimes|required|string|max:1',
-            'curp'        => 'sometimes|required|string|max:18',
-            'correo'      => 'sometimes|required|email|unique:personas,correo,'.$user->id,
-            'contrasena'  => 'sometimes|nullable|string|min:6|confirmed',
+        $data = $r->validate([
+            'nombre'      => 'sometimes|string|max:255',
+            'apellido_p'  => 'sometimes|string|max:255',
+            'apellido_m'  => 'sometimes|string|max:255',
+            'sexo'        => 'sometimes|in:H,M',
+            'curp'        => 'nullable|string|max:18|unique:personas,curp,'.$u->id,
+            'correo'      => 'sometimes|email|unique:personas,correo,'.$u->id,
+            // antropometría:
+            'peso'        => 'nullable|numeric|min:10|max:350',
+            'altura'      => 'nullable|numeric|min:0.5|max:2.5',
         ]);
 
-        // Actualizar campos si vienen
-        $user->fill($validated);
+        // actualizar datos personales
+        $u->fill($data)->save();
 
-        if ($request->filled('contrasena')) {
-            $user->contrasena = Hash::make($request->contrasena);
+        // actualizar/crear antropometría (como en tu PerfilController)
+        if ($r->filled('peso') || $r->filled('altura')) {
+            MedidaAntropometrica::updateOrCreate(
+                ['id_persona' => $u->id],
+                [
+                    'peso'   => $r->input('peso'),
+                    'altura' => $r->input('altura'),
+                ]
+            );
         }
 
-        $user->save();
-
-        return response()->json(['message' => 'Perfil actualizado correctamente', 'user' => $user]);
-    }
-
-    // Logout y revocar token
-    public function logout(Request $request)
-    {
-        $request->user()->currentAccessToken()->delete();
-
-        return response()->json(['message' => 'Sesión cerrada correctamente']);
+        return response()->json($u->fresh());
     }
 }

@@ -1,60 +1,51 @@
 <?php
 
+use Illuminate\Support\Facades\Route;
+
 use App\Http\Controllers\Api\AuthController;
-
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
-
-// Rutas protegidas con Sanctum o middleware auth:sanctum
-Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/perfil', [AuthController::class, 'perfil']);
-    // Otras rutas protegidas
-});
 use App\Http\Controllers\Api\ProfileController;
-
-Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'show']);
-    Route::put('/profile', [ProfileController::class, 'update']);
-    Route::post('/logout', [ProfileController::class, 'logout']);
-});
-use App\Http\Controllers\Api\AlimentoController;
-
-Route::middleware('auth:sanctum')->get('/alimentos', [AlimentoController::class, 'index']);
-use App\Http\Controllers\Api\ComidaController;
-
-Route::middleware('auth:sanctum')->get('/comidas', [ComidaController::class, 'index']);
-Route::middleware('auth:sanctum')->post('/comidas', [ComidaController::class, 'store']);
-
-use App\Http\Controllers\Api\MedidaSaludController;
-
-Route::middleware('auth:sanctum')->get('/medidas-salud', [MedidaSaludController::class, 'index']);
-use App\Http\Controllers\Api\PlanAlimenticioController;
-
-Route::middleware('auth:sanctum')->get('/plan-alimenticio', [PlanAlimenticioController::class, 'show']);
-
-Route::middleware('auth:sanctum')->get('/user', [AuthController::class, 'perfil']);
-use App\Http\Controllers\Api\PerfilController;
-
-Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/perfil', [PerfilController::class, 'show']);
-    Route::put('/perfil', [PerfilController::class, 'update']);
-});
+use App\Http\Controllers\Api\AlergiaController;
 use App\Http\Controllers\Api\MedidaSaludApiController;
-
-Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/medidas-salud', [MedidaSaludApiController::class, 'show']);
-    Route::post('/medidas-salud', [MedidaSaludApiController::class, 'store']);
-});
+use App\Http\Controllers\Api\GlucosaApiController;
+use App\Http\Controllers\Api\ComidaApiController;
 use App\Http\Controllers\Api\PlanAlimenticioApiController;
 
-Route::middleware('auth:sanctum')->get('/plan', [PlanAlimenticioApiController::class, 'show']);
-use App\Http\Controllers\Api\ComidaApiController;
+// Diagnóstico rápido
+Route::get('/ping', fn() => response()->json(['ok'=>true]));
 
-Route::middleware('auth:sanctum')->post('/comida/registrar', [ComidaApiController::class, 'registrar']);
-use App\Http\Controllers\Api\SeguimientoApiController;
+// Público
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login',    [AuthController::class, 'login']);
 
+// Protegido con Sanctum
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/seguimientos/hoy', [SeguimientoApiController::class, 'resumenDiario']);
-    Route::get('/seguimientos/semana', [SeguimientoApiController::class, 'graficaSemana']);
-    Route::get('/seguimientos/horas', [SeguimientoApiController::class, 'graficaHora']);
+
+  // Sesión / Perfil
+  Route::get('/perfil',  [AuthController::class, 'perfil']);
+  Route::put('/perfil',  [ProfileController::class, 'update']);
+  Route::post('/logout', [AuthController::class, 'logout']);
+
+  // Alergias
+  Route::get('/alergenos', [AlergiaController::class, 'catalogo']);
+  Route::get('/alergias',  [AlergiaController::class, 'misAlergias']);
+  Route::post('/alergias', [AlergiaController::class, 'guardar']); // Body: { "ids":[1,3,7] }
+
+  // Medidas de salud
+  Route::get('/medidas',               [MedidaSaludApiController::class, 'index']);
+  Route::post('/medidas',              [MedidaSaludApiController::class, 'store']);
+  Route::delete('/medidas/{id}',       [MedidaSaludApiController::class, 'destroy']);
+
+ // G L U C O S A
+    Route::get('/glucosa',          [GlucosaApiController::class, 'index']);
+    Route::post('/glucosa',         [GlucosaApiController::class, 'store']);
+    Route::delete('/glucosa/{id}',  [GlucosaApiController::class, 'destroy']);
+
+    // C O M I D A S  (seguimientos)
+    Route::get('/comidas',                [ComidaApiController::class, 'index']);
+    Route::post('/comidas',               [ComidaApiController::class, 'store']);
+    Route::delete('/comidas/{id}',        [ComidaApiController::class, 'destroy']); // id de seguimiento
+
+    // P L A N E S
+    Route::post('/plan/recetas',   [PlanAlimenticioApiController::class, 'recetas']);   // modo=agrupadas
+    Route::post('/plan/semanal',   [PlanAlimenticioApiController::class, 'semanal']);   // comidas_por_dia=3|4
 });

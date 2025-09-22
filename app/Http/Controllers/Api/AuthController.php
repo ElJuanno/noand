@@ -10,72 +10,71 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    public function register(Request $request)
+    public function register(Request $r)
     {
-        $validated = $request->validate([
-            'nombre' => 'required|string|max:255',
-            'apellido_p' => 'required|string|max:255',
-            'apellido_m' => 'required|string|max:255',
-            'sexo' => 'required|in:H,M',
-            'curp' => 'nullable|string|max:18|unique:personas,curp',
-            'correo' => 'required|email|unique:personas,correo',
-            'contrasena' => 'required|string|min:6|confirmed',
+        $v = $r->validate([
+            'nombre'       => 'required|string|max:255',
+            'apellido_p'   => 'required|string|max:255',
+            'apellido_m'   => 'required|string|max:255',
+            'sexo'         => 'required|in:H,M',
+            'curp'         => 'nullable|string|max:18|unique:personas,curp',
+            'correo'       => 'required|email|unique:personas,correo',
+            'contrasena'   => 'required|string|min:6|confirmed',
         ]);
 
-        $persona = Persona::create([
-            'nombre' => $validated['nombre'],
-            'apellido_p' => $validated['apellido_p'],
-            'apellido_m' => $validated['apellido_m'],
-            'sexo' => $validated['sexo'],
-            'curp' => $validated['curp'] ?? null,
-            'correo' => $validated['correo'],
-            'contrasena' => Hash::make($validated['contrasena']),
+        $p = Persona::create([
+            'nombre'      => $v['nombre'],
+            'apellido_p'  => $v['apellido_p'],
+            'apellido_m'  => $v['apellido_m'],
+            'sexo'        => $v['sexo'],
+            'curp'        => $v['curp'] ?? null,
+            'correo'      => $v['correo'],
+            'contrasena'  => Hash::make($v['contrasena']),
         ]);
 
-        $token = $persona->createToken('auth_token')->plainTextToken;
+        $token = $p->createToken('auth_token')->plainTextToken;
 
         return response()->json([
-            'message' => 'Registro exitoso',
+            'message'      => 'Registro exitoso',
             'access_token' => $token,
-            'token_type' => 'Bearer',
-            'persona' => $persona,
+            'token_type'   => 'Bearer',
+            'persona'      => $p,
         ], 201);
     }
 
-    public function login(Request $request)
+    public function login(Request $r)
     {
-        $request->validate([
-            'correo' => 'required|email',
+        $r->validate([
+            'correo'     => 'required|email',
             'contrasena' => 'required',
         ]);
 
-        $persona = Persona::where('correo', $request->correo)->first();
+        $p = Persona::where('correo', $r->correo)->first();
 
-        if (! $persona || ! Hash::check($request->contrasena, $persona->contrasena)) {
+        if (!$p || !Hash::check($r->contrasena, $p->contrasena)) {
             throw ValidationException::withMessages([
                 'correo' => ['Las credenciales son incorrectas.'],
             ]);
         }
 
-        $token = $persona->createToken('auth_token')->plainTextToken;
+        $token = $p->createToken('auth_token')->plainTextToken;
 
         return response()->json([
-            'message' => 'Login exitoso',
+            'message'      => 'Login exitoso',
             'access_token' => $token,
-            'token_type' => 'Bearer',
-            'persona' => $persona,
+            'token_type'   => 'Bearer',
+            'persona'      => $p,
         ]);
     }
 
-    public function logout(Request $request)
+    public function logout(Request $r)
     {
-        $request->user()->tokens()->delete();
-
+        $r->user()->tokens()->delete();
         return response()->json(['message' => 'Sesión cerrada correctamente']);
     }
 
-    public function perfil(Request $request)
+    public function perfil(Request $r)
     {
-        return response()->json($request->user());
+        return response()->json($r->user());
     }
 }
