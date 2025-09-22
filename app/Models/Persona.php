@@ -25,9 +25,15 @@ class Persona extends Authenticatable
 
     protected $hidden = ['contrasena'];
 // app/Models/Persona.php
-public function alergias() {
-    return $this->belongsToMany(\App\Models\Alergia::class, 'alergia_persona', 'persona_id', 'alergia_id')->withTimestamps();
-}
+public function alergias()
+    {
+        return $this->belongsToMany(
+            Alergia::class,      // modelo relacionado
+            'alergia_persona',   // tabla pivote
+            'id_persona',        // FK local en pivote
+            'alergia_id'         // FK relacionada en pivote
+        )->withTimestamps();
+    }
 
     public function getAuthPassword() { return $this->contrasena; }
     public function getAuthIdentifierName() { return 'id'; }

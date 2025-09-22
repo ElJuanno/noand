@@ -3,22 +3,21 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Seguimiento extends Model
 {
+    use HasFactory;
+
     protected $table = 'seguimientos';
 
     protected $fillable = [
-        'id_persona',
-        'comida',
-        'fecha',
-        'notas',
+        'id_persona','fecha','hora','tiempo','nombre',
+        'calorias','azucar','carbohidratos','notas','metadata',
     ];
 
-    public $timestamps = true;
-    public function comida()
-    {
-        return $this->belongsTo(Comida::class, 'id_comida');
-    }
-
+    protected $casts = [
+        'fecha' => 'date',
+        'metadata' => 'array',
+    ];
 }

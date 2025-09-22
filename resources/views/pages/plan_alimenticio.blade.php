@@ -91,7 +91,7 @@ body{ background: var(--bg) !important; color: var(--text); }
   padding:18px; text-align:center; color:var(--muted); font-weight:700;
 }
 </style>
-
+<br><br><p></p>
 <div class="container-narrow">
 
   {{-- Encabezado estilo panel --}}
@@ -102,7 +102,6 @@ body{ background: var(--bg) !important; color: var(--text); }
         <div class="tile-sub">Visualiza las recetas que puedes seguir y personalizar.</div>
       </div>
       <div class="d-flex gap-2 flex-wrap">
-        {{-- Placeholders de KPIs opcionales --}}
         @isset($imc)
           <span class="badge-soft"><i class="bi bi-activity"></i> IMC: {{ $imc }}</span>
         @endisset
@@ -146,14 +145,18 @@ body{ background: var(--bg) !important; color: var(--text); }
                     <span><i class="bi bi-droplet"></i> {{ $rec['azucar'] ?? 'N/A' }} azúcar</span>
                     <span><i class="bi bi-box"></i> {{ $rec['carbohidratos'] ?? 'N/A' }} carbs</span>
                   </div>
-                  <form action="{{ route('comida.store') }}" method="POST" class="mt-2">
+
+                  {{-- Seguir -> Seguimiento --}}
+                  <form action="{{ route('seguimiento.store') }}" method="POST" class="mt-2">
                     @csrf
-                    <input type="hidden" name="nombre" value="{{ $rec['nombre'] ?? '' }}">
-                    <input type="hidden" name="hora" value="{{ now()->format('H:i:s') }}">
-                    <input type="hidden" name="calorias" value="{{ $rec['calorias'] ?? 0 }}">
-                    <input type="hidden" name="azucar" value="{{ $rec['azucar'] ?? 0 }}">
+                    <input type="hidden" name="nombre"        value="{{ $rec['nombre'] ?? '' }}">
+                    <input type="hidden" name="tiempo"        value="{{ $tiempo }}">
+                    <input type="hidden" name="fecha"         value="{{ now()->toDateString() }}">
+                    <input type="hidden" name="hora"          value="{{ now()->format('H:i:s') }}">
+                    <input type="hidden" name="calorias"      value="{{ $rec['calorias'] ?? 0 }}">
+                    <input type="hidden" name="azucar"        value="{{ $rec['azucar'] ?? 0 }}">
                     <input type="hidden" name="carbohidratos" value="{{ $rec['carbohidratos'] ?? 0 }}">
-                    <button class="btn btn-success w-100 fw-semibold"><i class="bi bi-plus-circle"></i> Seguir</button>
+                    <button type="submit" class="btn btn-success btn-sm w-100">Seguir</button>
                   </form>
                 </div>
               </article>
@@ -181,12 +184,16 @@ body{ background: var(--bg) !important; color: var(--text); }
                     <span><i class="bi bi-droplet"></i> {{ $rec['azucar'] ?? 'N/A' }}</span>
                     <span><i class="bi bi-box"></i> {{ $rec['carbohidratos'] ?? 'N/A' }}</span>
                   </div>
-                  <form action="{{ route('comida.store') }}" method="POST" class="mt-2">
+
+                  {{-- Seguir -> Seguimiento (móvil) --}}
+                  <form action="{{ route('seguimiento.store') }}" method="POST" class="mt-2">
                     @csrf
-                    <input type="hidden" name="nombre" value="{{ $rec['nombre'] ?? '' }}">
-                    <input type="hidden" name="hora" value="{{ now()->format('H:i:s') }}">
-                    <input type="hidden" name="calorias" value="{{ $rec['calorias'] ?? 0 }}">
-                    <input type="hidden" name="azucar" value="{{ $rec['azucar'] ?? 0 }}">
+                    <input type="hidden" name="nombre"        value="{{ $rec['nombre'] ?? '' }}">
+                    <input type="hidden" name="tiempo"        value="{{ $tiempo }}">
+                    <input type="hidden" name="fecha"         value="{{ now()->toDateString() }}">
+                    <input type="hidden" name="hora"          value="{{ now()->format('H:i:s') }}">
+                    <input type="hidden" name="calorias"      value="{{ $rec['calorias'] ?? 0 }}">
+                    <input type="hidden" name="azucar"        value="{{ $rec['azucar'] ?? 0 }}">
                     <input type="hidden" name="carbohidratos" value="{{ $rec['carbohidratos'] ?? 0 }}">
                     <button class="btn btn-success w-100 fw-semibold">Seguir</button>
                   </form>

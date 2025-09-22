@@ -144,14 +144,16 @@ body{ background: var(--bg) !important; color: var(--text); }
                     <span class="stat"><i class="bi bi-droplet"></i> {{ $rec['azucar'] ?? 'N/A' }}</span>
                     <span class="stat"><i class="bi bi-box"></i> {{ $rec['carbohidratos'] ?? 'N/A' }}</span>
                   </div>
-                  <form action="{{ route('comida.store') }}" method="POST" class="mt-2">
-                    @csrf
-                    <input type="hidden" name="nombre" value="{{ $rec['nombre'] ?? '' }}">
-                    <input type="hidden" name="hora" value="{{ now()->format('H:i:s') }}">
-                    <input type="hidden" name="calorias" value="{{ $rec['calorias'] ?? 0 }}">
-                    <input type="hidden" name="azucar" value="{{ $rec['azucar'] ?? 0 }}">
-                    <input type="hidden" name="carbohidratos" value="{{ $rec['carbohidratos'] ?? 0 }}">
-                    <button class="btn btn-outline-success w-100">Seguir</button>
+                  <form action="{{ route('seguimiento.store') }}" method="POST" class="mt-2">
+                      @csrf
+                      <input type="hidden" name="nombre"        value="{{ $r['nombre'] ?? '' }}">
+                      <input type="hidden" name="tiempo"        value="{{ $t }}">
+                      <input type="hidden" name="fecha"         value="{{ now()->toDateString() }}">
+                      <input type="hidden" name="hora"          value="{{ now()->format('H:i:s') }}">
+                      <input type="hidden" name="calorias"      value="{{ $r['calorias'] ?? 0 }}">
+                      <input type="hidden" name="azucar"        value="{{ $r['azucar'] ?? 0 }}">
+                      <input type="hidden" name="carbohidratos" value="{{ $r['carbohidratos'] ?? 0 }}">
+                      <button type="submit" class="btn btn-success btn-sm w-100">Seguir</button>
                   </form>
                 </div>
               </div>
@@ -205,7 +207,7 @@ body{ background: var(--bg) !important; color: var(--text); }
                         <span class="stat"><i class="bi bi-box"></i> {{ $r['carbohidratos'] ?? 'N/A' }}</span>
                       </div>
                       <div class="mt-auto">
-                        <form action="{{ route('comida.store') }}" method="POST">
+                        <form action="{{ route('seguimiento.store') }}" method="POST">
                           @csrf
                           <input type="hidden" name="nombre" value="{{ $r['nombre'] ?? '' }}">
                           <input type="hidden" name="hora" value="{{ now()->format('H:i:s') }}">

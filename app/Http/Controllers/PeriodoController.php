@@ -7,7 +7,7 @@ use App\Models\Persona;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 
-class PerfilController extends Controller
+class PeriodoController extends Controller
 {
     public function edit()
     {

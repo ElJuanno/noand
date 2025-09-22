@@ -4,56 +4,69 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class PlanesAlimenticioController extends Controller
 {
     public function show(Request $request)
     {
-        $u = $request->user(); // usuario autenticado
+        $u = $request->user() ?? Auth::user(); // persona autenticada
 
-        // ====== ORÍGENES DE DATOS (ajusta los nombres a tu schema) ======
-        // Opción A: ya tienes imc y glucosa guardados en users
-        $imcUsuario     = optional($u)->imc;          // ej: columna users.imc
-        $glucosaUsuario = optional($u)->glucosa;      // ej: columna users.glucosa
+        // ===== IMC / Glucosa =====
+        $imcUsuario     = data_get($u, 'imc');
+        $glucosaUsuario = data_get($u, 'glucosa');
 
-        // Opción B: calcular IMC si no hay (peso/talla)
-        // peso_kg, altura_cm son ejemplos; usa los tuyos (weight, height, etc.)
+        // Si no hay IMC guardado, lo calculamos con peso/altura (en m o cm)
         if (!$imcUsuario) {
-            $pesoKg   = optional($u)->peso_kg ?: optional($u)->weight_kg;
-            $alturaCm = optional($u)->altura_cm ?: optional($u)->height_cm;
-            if ($pesoKg && $alturaCm && $alturaCm > 0) {
-                $imcUsuario = round($pesoKg / pow($alturaCm / 100, 2), 1);
+            $peso   = data_get($u, 'peso') ?? data_get($u, 'peso_kg') ?? data_get($u, 'weight_kg');
+            $altura = data_get($u, 'altura') ?? data_get($u, 'altura_cm') ?? data_get($u, 'height_cm');
+            if ($peso && $altura) {
+                $alturaM   = $altura > 5 ? ($altura / 100) : $altura; // si viene en cm -> m
+                if ($alturaM > 0) {
+                    $imcUsuario = round($peso / ($alturaM * $alturaM), 1);
+                }
             }
         }
 
-        // Valores por defecto seguros si falta algo
         $imc     = (float) ($imcUsuario ?? 24.0);
         $glucosa = (float) ($glucosaUsuario ?? 100);
 
-        // Modo preferido del usuario (si lo guardas). Valores posibles: 'agrupadas' | 'semanal4' | 'semanal3'
-        $modoPreferido = optional($u)->plan_modo; // ej: users.plan_modo
-        $modo = in_array($modoPreferido, ['agrupadas','semanal3','semanal4']) ? $modoPreferido : 'semanal4';
+        // ===== Modo y semilla =====
+        $modoPreferido = data_get($u, 'plan_modo');
+        $modo = in_array($modoPreferido, ['agrupadas', 'semanal3', 'semanal4']) ? $modoPreferido : 'semanal4';
+        $seed = (int) (data_get($u, 'plan_seed') ?? data_get($u, 'id') ?? 42);
 
-        // Semilla estable por usuario para que su plan sea reproducible
-        $seed = (int) (optional($u)->plan_seed ?? $u->id ?? 42);
+        // ===== Alergias (IDs) =====
+        // Si tienes la relación ->alergias() en el modelo Persona, se usa; si no, lee directo de la tabla pivote.
+        if (method_exists($u, 'alergias')) {
+            $alergiasIds = $u->alergias()->pluck('alergias.id')->map(fn ($v) => (int) $v)->values();
+        } else {
+            $alergiasIds = DB::table('alergia_persona')
+                ->where('persona_id', $u->id)
+                ->pluck('alergia_id')
+                ->map(fn ($v) => (int) $v)
+                ->values();
+        }
 
-        // ====== Llamada al backend Flask ======
+        // ===== Llamada a Flask =====
         $flaskUrl = rtrim(env('FLASK_URL', 'http://127.0.0.1:5000'), '/') . '/api/plan';
         $payload = [
-            'imc'      => $imc,
-            'glucosa'  => $glucosa,
-            'modo'     => $modo,
-            'aleatorio'=> true,     // puedes guardar esto en el usuario si quieres
-            'seed'     => $seed,
+            'imc'          => $imc,
+            'glucosa'      => $glucosa,
+            'modo'         => $modo,
+            'aleatorio'    => true,
+            'seed'         => $seed,
+            'alergias_ids' => $alergiasIds,   // <<<<<< CLAVE PARA FILTRAR POR ALERGIAS
         ];
 
         $agrupadas = [];
         $semanal   = [];
 
         try {
-            $resp = Http::timeout(20)->post($flaskUrl, $payload);
+            $resp = Http::timeout(60)->post($flaskUrl, $payload);
             if ($resp->successful()) {
-                $json = $resp->json();
+                $json      = $resp->json();
                 $agrupadas = $json['agrupadas'] ?? [];
                 $semanal   = $json['semanal'] ?? [];
             }
@@ -61,7 +74,6 @@ class PlanesAlimenticioController extends Controller
             // \Log::error($e->getMessage());
         }
 
-        // Render sin formularios ni query params
         return view('pages.planes_alimenticio', compact(
             'agrupadas', 'semanal', 'modo', 'imc', 'glucosa', 'seed'
         ));
